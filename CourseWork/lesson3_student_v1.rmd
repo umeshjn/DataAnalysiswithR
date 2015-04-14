@@ -1,0 +1,467 @@
+Lesson 3
+========================================================
+
+***
+
+### What to Do First?
+Notes:
+
+***
+
+### Pseudo-Facebook User Data
+Notes:
+
+```{r Pseudo-Facebook User Data}
+pf <- read.delim("pseudo_facebook.tsv")
+names(pf)
+str(pf)
+dim(pf)
+
+head(pf,2)
+tail(pf,2)
+
+table(pf$dob_year)
+table(pf$dob_month)
+
+```
+
+***
+
+### Histogram of Users' Birthdays
+Notes:
+
+```{r Histogram of Users\' Birthdays}
+install.packages('ggplot2')
+library(ggplot2)
+
+ggplot(data=pf,aes(dob_day)) + 
+  geom_histogram() +
+  scale_x_discrete(breaks=c(1,31))
+
+ggplot(data=pf,aes(dob_day)) + 
+  theme_igray() + 
+  geom_histogram(fill="blue") +
+  scale_x_discrete(breaks=c(1,31)) +
+  labs(title="Distribution of the FB users based on Day of Birth",x="Day of Birth",y="Count of the Users")
+
+
+ggsave("dob_day_histogram_with_theme.jpg",dpi=300,width=10,height=5)
+```
+
+***
+
+#### What are some things that you notice about this histogram?
+Response:
+
+***
+
+### Moira's Investigation
+Notes:
+
+***
+
+### Estimating Your Audience Size
+Notes:
+
+***
+
+#### Think about a time when you posted a specific message or shared a photo on Facebook. What was it?
+Response:
+
+#### How many of your friends do you think saw that post?
+Response:
+
+#### Think about what percent of your friends on Facebook see any posts or comments that you make in a month. What percent do you think that is?
+Response:
+
+***
+
+### Perceived Audience Size
+Notes:
+
+***
+### Faceting
+Notes:
+
+```{r Faceting}
+
+ggplot(data=pf,aes(dob_day)) + 
+  geom_histogram(fill="blue") +
+  facet_wrap(~dob_month) +
+  scale_x_discrete(breaks=c(1,31)) +
+  scale_y_continuous(label=comma)
+
+
+ggplot(data=subset(pf,!is.na(gender)),aes(dob_day)) + 
+  geom_histogram(fill="blue") +
+  facet_grid(gender~dob_month) +
+  scale_x_discrete(breaks=c(1,31)) +
+  scale_y_continuous(label=comma)
+
+```
+
+#### Let’s take another look at our plot. What stands out to you here?
+Response:
+First day of the year being the most common birth day is very unusual.  This cannot be true. There should be some other reason why there is so many people with Jan 1 being the birth day. One of the reasons could be the website might be showing the first of Jan as the default birthday while creating the profile and many people are not changing it to their actual birth date.
+***
+
+### Be Skeptical - Outliers and Anomalies
+Notes:
+
+***
+
+### Moira's Outlier
+Notes:
+#### Which case do you think applies to Moira’s outlier?
+Response:
+Bad data about an extreme case
+***
+
+### Friend Count
+Notes:
+
+#### What code would you enter to create a histogram of friend counts?
+
+```{r Friend Count}
+ggplot(data=pf,aes(friend_count)) +
+  geom_histogram()
+
+ggplot(data=pf,aes(friend_count)) +
+  geom_histogram(fill="blue",binwidth=1) +
+  scale_x_continuous(limits=c(0,1000))
+
+
+ggplot(data=pf,aes(friend_count)) +
+  geom_histogram(fill="blue",binwidth=10) +
+  scale_x_continuous(limits=c(0,1000),breaks=seq(0,1000,100))
+
+
+ggplot(data=pf,aes(friend_count)) +
+  geom_histogram(fill="blue",binwidth=25) +
+  scale_x_continuous(limits=c(0,2000),breaks=seq(0,2000,100))
+
+```
+
+#### How is this plot similar to Moira's first plot?
+Response:
+Majority of the users have a very small friends count due to which the first bar in the histogram is huge one  and also the data is left skewed
+***
+
+### Limiting the Axes
+Notes:
+
+```{r Limiting the Axes}
+ggplot(data=pf,aes(friend_count)) +
+  geom_histogram(fill="blue") +
+  scale_x_continuous(limits=c(0,1000))
+```
+
+### Exploring with Bin Width
+Notes:
+
+***
+
+### Adjusting the Bin Width
+Notes:
+
+### Faceting Friend Count
+```{r Faceting Friend Count}
+# What code would you add to create a facet the histogram by gender?
+# Add it to the code below.
+qplot(x = friend_count, data = pf, binwidth = 10) +
+  scale_x_continuous(limits = c(0, 1000),breaks = seq(0, 1000, 50)) +
+  facet_wrap(~gender)
+```
+
+***
+
+### Omitting NA Values
+Notes:
+
+```{r Omitting NA Values}
+
+ggplot(data=subset(pf,!is.na(gender)),aes(friend_count)) +
+  geom_histogram(fill="blue",binwidth=5) +
+  scale_x_continuous(limits=c(0,1000)) +
+  facet_wrap(~gender)
+
+
+ggplot(data=na.omit(pf),aes(friend_count)) +
+  geom_histogram(fill="blue",binwidth=5) +
+  scale_x_continuous(limits=c(0,1000)) +
+  facet_wrap(~gender)
+
+
+```
+
+***
+
+### Statistics 'by' Gender
+Notes:
+
+```{r Statistics \'by\' Gender}
+
+table(pf$gender)
+by(pf$friend_count,pf$gender,summary)
+  
+```
+
+#### Who on average has more friends: men or women?
+Response:
+Women
+#### What's the difference between the median friend count for women and men?
+Response:
+22
+#### Why would the median be a better measure than the mean?
+Response:
+Data is not normally distributed for taking mean as the better measure. Data is right skewed. Median is resistant to change for this kind of data distribution
+***
+
+### Tenure
+Notes:
+
+```{r Tenure}
+
+ggplot(data=pf,aes(tenure)) + 
+  geom_histogram(fill="blue",binwidth=100,color="white")
+
+
+
+ggplot(data=pf,aes(tenure/365)) + 
+  geom_histogram(fill="blue",binwidth=0.25,color="white")
+
+ggplot(data=pf,aes(tenure/365)) + 
+  geom_histogram(fill="blue",binwidth=0.1,color="black")
+
+ggplot(data=pf,aes(tenure/365)) + 
+  geom_histogram(fill="blue",binwidth=1,color="white") +
+  scale_x_continuous(limits=c(0,8))
+                     
+ggplot(data=pf,aes(tenure/365)) + 
+  geom_histogram(fill="blue",binwidth=1,color="white") +
+  scale_x_continuous(limits=c(0,8),breaks=seq(0,8,1))
+
+```
+
+***
+
+#### How would you create a histogram of tenure by year?
+
+```{r Tenure Histogram by Year}
+
+ggplot(data=pf,aes(tenure/365)) + 
+  geom_histogram(fill="blue",binwidth=.5,color="white") +
+  scale_x_continuous(limits=c(0,8),breaks=seq(0,8,1))
+
+```
+
+***
+
+### Labeling Plots
+Notes:
+
+```{r Labeling Plots}
+
+ggplot(data=pf,aes(tenure/365)) + 
+  geom_histogram(fill="blue",binwidth=0.25,color="white") +
+  scale_x_continuous(limits=c(0,7),breaks=seq(0,7,1)) +
+  labs(title="Tenure of the users on Facebook",x="Number of Years in Facebook",y="Count of Number of users")
+
+
+```
+
+***
+
+### User Ages
+Notes:
+
+```{r User Ages}
+names(pf)
+head(pf$age)
+
+ggplot(data=pf,aes(age)) +
+  geom_histogram(color="black",fill="blue",binwidth=1)
+
+
+ggplot(data=pf,aes(age)) +
+  geom_histogram(color="black",fill="blue",binwidth=1) +
+  scale_x_continuous(limits=c(13,120))
+
+
+ggplot(data=pf,aes(age)) +
+  geom_histogram(color="black",fill="blue",binwidth=1) +
+  scale_x_continuous(limits=c(13,120),breaks=seq(10,120,5))
+
+
+ggplot(data=pf,aes(age)) +
+  geom_histogram(color="black",fill="blue",binwidth=1) +
+  scale_x_continuous(limits=c(13,120),breaks=seq(10,120,5)) +
+  labs(title="Distribution of the Facebook users by age",x="Age of the Facebook users",y="Number of users in the sample")
+
+
+
+ggplot(data=pf,aes(age)) +
+  geom_histogram(color="black",fill="blue",binwidth=1) +
+  scale_x_continuous(limits=c(13,120),breaks=seq(10,120,5)) +
+  scale_y_continuous(labels=comma) +
+  labs(title="Distribution of the Facebook users by age",x="Age of the Facebook users",y="Number of users in the sample")
+
+```
+
+#### What do you notice?
+Response:
+Majority of the users are within the age group of 15 to 30
+Even though there are users above the age of 90 it is very unlikely that they are genuine users. 
+Not much variation in the number of users between the age 40 to 60
+
+***
+
+### The Spread of Memes
+Notes:
+
+***
+
+### Lada's Money Bag Meme
+Notes:
+
+***
+
+### Transforming Data
+Notes:
+
+***
+
+### Add a Scaling Layer
+Notes:
+
+```{r Add a Scaling Layer}
+
+p1 <-  ggplot(data=pf,aes(friend_count)) +
+  geom_histogram(color="black",fill="blue",binwidth=25) +
+  scale_x_continuous(limits=c(0,2000))
+
+p2 <-  ggplot(data=pf,aes(log10(friend_count+1))) +
+  geom_histogram(color="black",fill="blue",binwidth=0.05)
+
+p3 <-  ggplot(data=pf,aes(sqrt(friend_count))) +
+  geom_histogram(color="black",fill="blue",binwidth=1)
+
+grid.arrange(p1,p2,p3)
+
+```
+
+***
+
+
+### Frequency Polygons
+
+```{r Frequency Polygons}
+
+ggplot(data=pf,aes(friend_count)) + 
+  geom_histogram(color="black",fill="blue",binwidth=10) +
+  scale_x_continuous(limits=c(0,2000),breaks=seq(0,2000,100))
+
+
+ggplot(data=pf,aes(friend_count)) + 
+  geom_freqpoly(aes(color=gender)) +
+  scale_x_continuous(limits=c(0,2000),breaks=seq(0,2000,100))
+
+```
+
+***
+
+### Likes on the Web
+Notes:
+
+```{r Likes on the Web}
+ggplot(data=subset(pf,!is.na(gender)),aes(www_likes)) + 
+  geom_freqpoly(aes(color=gender)) +
+  scale_x_log10()
+
+by(pf$www_likes,pf$gender,sum)
+
+```
+
+
+***
+
+### Box Plots
+Notes:
+
+```{r Box Plots}
+
+ggplot(aes(y=friend_count,x=gender),data=pf) +
+  geom_boxplot() 
+
+ggplot(aes(y=friend_count,x=gender),data=subset(pf,!is.na(gender))) +
+  geom_boxplot() +
+  scale_y_continuous(limits=c(0,1000))
+
+
+ggplot(aes(y=friend_count,x=gender),data=subset(pf,!is.na(gender))) +
+  geom_boxplot() +
+  scale_y_continuous(limits=c(0,250))
+
+ggplot(aes(y=friend_count,x=gender),data=subset(pf,!is.na(gender))) +
+  geom_boxplot() +
+  coord_cartesian(ylim=c(0,1000))
+
+```
+
+#### Adjust the code to focus on users who have friend counts between 0 and 1000.
+
+```{r}
+ggplot(aes(y=friend_count,x=gender),data=subset(pf,!is.na(gender))) +
+  geom_boxplot() +
+  coord_cartesian(ylim=c(0,1000))
+
+
+```
+
+***
+
+### Box Plots, Quartiles, and Friendships
+Notes:
+
+```{r Box Plots, Quartiles, and Friendships}
+
+by(pf$friend_count,pf$gender,summary)
+
+```
+
+#### On average, who initiated more friendships in our sample: men or women?
+Response:
+#### Write about some ways that you can verify your answer.
+Response:
+```{r Friend Requests by Gender}
+ggplot(aes(y=friendships_initiated,x=gender),data=subset(pf,!is.na(gender))) +
+  geom_boxplot() +
+  coord_cartesian(ylim=c(0,250))
+
+by(pf$friendships_initiated,pf$gender,summary)
+```
+
+Response:
+
+***
+
+### Getting Logical
+Notes:
+
+```{r Getting Logical}
+
+```
+
+Response:
+
+***
+
+### Analyzing One Variable
+Reflection:
+This lesson gave a detailed explanation on the ways in which we can analysis the single variable in the data set using the visualization packages of R and also some of the other common methods used to get the idea on the values of that particular variable set.
+
+Even with the visualization, this lesson gives us the overview of the various methods and its parameters which can be used in order to get better insight into the distribution of the values within the dataset.
+***
+
+Click **KnitHTML** to see all of your hard work and to have an html
+page of this lesson, your answers, and your notes!

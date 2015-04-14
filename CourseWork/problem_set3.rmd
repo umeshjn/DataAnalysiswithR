@@ -1,0 +1,172 @@
+---
+title: "problem_set_3"
+author: "Umesh"
+date: "Sunday, February 08, 2015"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+data(diamonds)
+summary(diamonds)
+length(diamonds)
+tail(diamonds)
+names(diamonds)
+```
+
+Create a histogram of the price of all the diamonds in the diamond data set.
+
+```{r}
+ggplot(aes(x=price),data=diamonds,color='blue') +
+  geom_histogram(color = 'black', fill = 'blue')
+```
+
+Create a summary of the price of all the diamonds in the diamond data set.
+
+```{r}
+summary(diamonds$price)
+```
+
+How many diamonds cost less than $500
+```{r}
+summary(diamonds$price<500)
+
+ggplot(aes(x = diamonds$price), data = diamonds) +
+   geom_histogram(binwidth = 50, color = 'black', fill = 'blue') +
+   scale_x_continuous(limits = c(250, 500))
+                      
+```
+
+How many diamonds cost less than $250
+```{r}
+summary(diamonds$price<250)
+
+ggplot(aes(x = diamonds$price), data = diamonds) +
+   geom_histogram(binwidth = 50, color = 'black', fill = 'blue') +
+   scale_x_continuous(limits = c(0, 250))
+
+```
+
+How many diamonds cost $15000 or more
+```{r}
+summary(diamonds$price>=15000)
+
+ggplot(aes(x = diamonds$price), data = diamonds) +
+   geom_histogram(binwidth = 100, color = 'black', fill = 'blue') +
+   scale_x_continuous(limits = c(15000, 19000))
+```
+
+Explore the highest peak
+```{r}
+
+p1 = ggplot(aes(x=price),data=diamonds,color='blue') + geom_histogram(color = 'black', fill = 'blue')
+
+p2 = ggplot(aes(x=price),data=diamonds,color='blue') + geom_histogram(binwidth = 50, color = 'black', fill = 'blue') + scale_x_continuous(limits = c(0, 2000),breaks = seq(0, 2000, 50))
+
+p3 = ggplot(aes(x=price),data=diamonds,color='blue') + geom_histogram(binwidth = 25, color = 'black', fill = 'blue') + scale_x_continuous(limits = c(250, 2000),breaks = seq(250, 2000, 50))
+
+p4 = ggplot(aes(x=price),data=diamonds,color='blue') + geom_histogram(binwidth = 10, color = 'black',fill = 'blue') + scale_x_continuous(limits = c(250, 1500),breaks = seq(250, 1500, 50))
+
+library("gridExtra")
+library("grid")
+
+grid.arrange(p1, p2, p3, p4, ncol=1)
+
+```
+
+
+Break out the histogram of diamond prices by cut.
+
+```{r Faceting Diamond prices by cut}
+#qplot
+qplot(x = price, data = diamonds, binwidth = 250) +
+  scale_x_continuous() +
+  facet_wrap(~cut)
+
+#ggplot
+ggplot(aes(x = diamonds$price), data = diamonds) +
+   geom_histogram(binwidth = 250, color = 'black', fill = 'blue') +
+   scale_x_continuous() +
+   facet_wrap(~cut)
+
+by(diamonds$price,diamonds$cut,max)
+
+by(diamonds$price,diamonds$cut,min)
+
+by(diamonds$price,diamonds$cut,median)
+
+```
+
+
+Distribution of diamonds by cut
+```{r}
+qplot(x = price, data = diamonds) + facet_wrap(~cut)
+
+qplot(x = price, data = diamonds) + facet_wrap(~cut,scales="free_y")
+```
+
+Create a histogram of price per carat and facet it by cut. You can make adjustments to the code from the previous exercise to get started.
+
+Adjust the bin width and transform the scale of the x-axis using log10.
+
+```{r}
+qplot(x = log10(price/carat), data = diamonds) + facet_wrap(~cut)
+
+qplot(x = log10(price/carat), data = diamonds) + facet_wrap(~cut,scales="free_y")
+
+```
+
+Investigate the price of diamonds using box plots,numerical summaries, and one of the following categorical variables: cut, clarity, or color.
+
+```{r Box Plots}
+
+b1 <-  qplot(x = cut, y= price, data = diamonds,geom='boxplot',color=cut) 
+
+b2 <- qplot(x = cut, y= price, data = diamonds,geom='boxplot',color=cut) + coord_cartesian(ylim = c(0, 7000))
+
+grid.arrange(b1,b2,ncol=1)
+
+
+```
+
+IQR of color of diamonds
+
+```{r Color IQR}
+
+by(diamonds$price,diamonds$color,summary)
+
+IQR(subset(diamonds,color=='D')$price)
+
+IQR(subset(diamonds,color=='J')$price)
+```
+
+
+Investigate the price per carat of diamonds using box plots,numerical summaries, and color.
+
+```{r Box Plots}
+
+b1 <-  qplot(x = color, y= price/carat, data = diamonds,geom='boxplot',color=color) 
+
+b2 <- qplot(x = color, y= price/carat, data = diamonds,geom='boxplot',color=color) + coord_cartesian(ylim = c(0, 6000))
+
+grid.arrange(b1,b2,ncol=1)
+
+by(diamonds$price/diamonds$carat,diamonds$color,summary)
+```
+
+
+
+```{r Frequency Polygons}
+qplot(x = carat, data = diamonds,geom='freqpoly') +
+  scale_x_continuous(limits = c(0, 7),breaks = seq(0, 7, 0.05)) 
+
+
+qplot(x = carat, data = diamonds, binwidth = 0.1) +
+  scale_x_continuous(limits = c(0, 7),breaks = seq(0, 7, 0.05))
+
+ggplot(aes(x=carat),data=diamonds,color='blue') + geom_histogram(color = 'black', fill = 'blue') + scale_x_continuous(limits = c(0, 7),breaks = seq(0, 7, 1))
+
+```

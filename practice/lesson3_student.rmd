@@ -1,0 +1,320 @@
+Lesson 3
+========================================================
+
+***
+
+### What to Do First?
+Notes:
+
+***
+
+### Pseudo-Facebook User Data
+Notes:
+
+```{r Pseudo-Facebook User Data}
+fb <- read.delim("pseudo_facebook.tsv")
+head(fb)
+tail(fb)
+names(fb)
+```
+
+***
+
+### Histogram of Users' Birthdays
+Notes:
+
+```{r Histogram of Users\' Birthdays}
+install.packages('ggplot2')
+library(ggplot2)
+
+qplot(data=fb,x=dob_day)
+  
+qplot(data=fb,x=dob_day) + scale_x_discrete(breaks=1:31) 
+
+ggplot(aes(x = dob_day), data = fb) + geom_histogram(color="white",fill="blue") + scale_x_discrete(breaks = 1:31)
+
+ggplot(aes(x = dob_month), data = fb) + geom_histogram(color="white",fill="blue") + scale_x_discrete(breaks = 1:12)
+
+ggplot(aes(x = dob_month), data = fb) + geom_histogram(color="white",fill="blue") + scale_x_discrete(breaks = 1:12)
+
+ggplot(aes(x = gender), data = fb) + geom_histogram(color="white",fill="blue")
+
+```
+
+***
+
+#### What are some things that you notice about this histogram?
+Response:
+Day of birth is most common during 1st of the month.
+
+When you register at a websites, some sites have default setting that use the 1st day of the month under the birth day field. Some also use a default month of January.
+
+In the case of Facebook, Jan and the 1st are the first drop down items that appear on the site. It's important to think about such details and the data generating process when exploring data.
+
+
+***
+
+### Moira's Investigation
+Notes:
+
+The investigation is about finding out if the perceived audience size is similar to the actual audience size in FB
+
+***
+
+### Estimating Your Audience Size
+Notes:
+
+***
+
+#### Think about a time when you posted a specific message or shared a photo on Facebook. What was it?
+Response:
+A video about the US soldiers returning home and surprising the families.
+
+#### How many of your friends do you think saw that post?
+Response:
+10
+
+#### Think about what percent of your friends on Facebook see any posts or comments that you make in a month. What percent do you think that is?
+Response:
+5%
+
+***
+
+### Perceived Audience Size
+Notes:
+
+***
+### Faceting
+Notes:
+
+```{r Faceting}
+ggplot(data = fb, aes(x = dob_day)) + geom_histogram() + scale_x_discrete(breaks = 1:31) +  facet_wrap(~dob_month)
+
+ggplot(data = fb, aes(x = dob_day)) + geom_histogram() + scale_x_discrete(breaks = 1:31) +  facet_wrap(~gender)
+```
+
+#### Let’s take another look at our plot. What stands out to you here?
+Response:
+First day of the year being the most common birth day is very unusual.  This cannot be true. There should be some other reason why there is so many people with Jan 1 being the birth day. One of the reasons could be the website might be showing the first of Jan as the default birthday while creating the profile and many people are not changing it to their actual birth date.
+***
+
+### Be Skeptical - Outliers and Anomalies
+Notes:
+
+***
+
+### Moira's Outlier
+Notes:
+#### Which case do you think applies to Moira’s outlier?
+Response:
+
+***
+
+### Friend Count
+Notes:
+
+#### What code would you enter to create a histogram of friend counts?
+
+```{r Friend Count}
+ggplot(data = fb, aes(x = friend_count)) + geom_histogram() + scale_x_continuous(limits = c(0, 1000))
+```
+
+#### How is this plot similar to Moira's first plot?
+Response:
+
+***
+
+### Limiting the Axes
+Notes:
+
+```{r Limiting the Axes}
+
+ggplot(data = fb, aes(x = friend_count)) + geom_histogram(binwidth = 25) + scale_x_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 50))
+
+```
+
+### Exploring with Bin Width
+Notes:
+
+***
+
+### Adjusting the Bin Width
+Notes:
+
+### Faceting Friend Count
+```{r Faceting Friend Count}
+# What code would you add to create a facet the histogram by gender?
+# Add it to the code below.
+ggplot(data = fb, aes(x = friend_count)) + geom_histogram(binwidth = 25)  + scale_x_continuous(limits = c(0, 1000),breaks = seq(0, 1000, 50)) + facet_wrap(~gender)
+```
+
+***
+
+### Omitting NA Values
+Notes:
+
+```{r Omitting NA Values}
+ggplot(data = subset(fb,!is.na(gender)), aes(x = friend_count)) + geom_histogram(binwidth = 25)  + scale_x_continuous(limits = c(0, 1000),breaks = seq(0, 1000, 50)) + facet_wrap(~gender)
+
+ggplot(data = na.omit(fb), aes(x = friend_count)) + geom_histogram(binwidth = 25)  + scale_x_continuous(limits = c(0, 1000),breaks = seq(0, 1000, 50)) + facet_wrap(~gender)
+
+
+```
+
+***
+
+### Statistics 'by' Gender
+Notes:
+
+```{r Statistics \'by\' Gender}
+table(fb$gender)
+
+by(fb$friend_count,fb$gender,summary)
+
+```
+
+
+#### Who on average has more friends: men or women?
+Response:
+
+#### What's the difference between the median friend count for women and men?
+Response:
+
+#### Why would the median be a better measure than the mean?
+Response:
+
+***
+
+### Tenure
+Notes:
+
+```{r Tenure}
+
+```
+
+***
+
+#### How would you create a histogram of tenure by year?
+
+```{r Tenure Histogram by Year}
+
+```
+
+***
+
+### Labeling Plots
+Notes:
+
+```{r Labeling Plots}
+
+```
+
+***
+
+### User Ages
+Notes:
+
+```{r User Ages}
+
+```
+
+#### What do you notice?
+Response:
+
+***
+
+### The Spread of Memes
+Notes:
+
+***
+
+### Lada's Money Bag Meme
+Notes:
+
+***
+
+### Transforming Data
+Notes:
+
+***
+
+### Add a Scaling Layer
+Notes:
+
+```{r Add a Scaling Layer}
+
+```
+
+***
+
+
+### Frequency Polygons
+
+```{r Frequency Polygons}
+
+```
+
+***
+
+### Likes on the Web
+Notes:
+
+```{r Likes on the Web}
+
+```
+
+
+***
+
+### Box Plots
+Notes:
+
+```{r Box Plots}
+
+```
+
+#### Adjust the code to focus on users who have friend counts between 0 and 1000.
+
+```{r}
+
+```
+
+***
+
+### Box Plots, Quartiles, and Friendships
+Notes:
+
+```{r Box Plots, Quartiles, and Friendships}
+
+```
+
+#### On average, who initiated more friendships in our sample: men or women?
+Response:
+#### Write about some ways that you can verify your answer.
+Response:
+```{r Friend Requests by Gender}
+
+```
+
+Response:
+
+***
+
+### Getting Logical
+Notes:
+
+```{r Getting Logical}
+
+```
+
+Response:
+
+***
+
+### Analyzing One Variable
+Reflection:
+
+***
+
+Click **KnitHTML** to see all of your hard work and to have an html
+page of this lesson, your answers, and your notes!

@@ -1,0 +1,154 @@
+---
+title: "ProblemSet2_V1"
+author: "Umesh"
+date: "Tuesday, February 17, 2015"
+output: html_document
+---
+
+
+Load the diamonds dataset and check the dataset
+
+```{r}
+library(ggplot2)
+data(diamonds)
+
+head(diamonds)
+tail(diamonds)
+
+```
+
+
+Scatterplot of price vs x
+
+```{r}
+ggplot(aes(x=x,y=price),data=diamonds) + geom_point(color="blue")
+
+ggplot(aes(x=x,y=price),data=diamonds) + geom_point(color="blue") + scale_x_continuous(limit=c(3,10),breaks=c(0,11,1))
+
+
+ggplot(aes(x=x,y=price),data=diamonds) + geom_point(color="blue") + scale_x_continuous(limit=c(3,11))
+
+ggplot(aes(x=x,y=price),data=diamonds) + geom_point(alpha=1/20,color="blue") + scale_x_continuous(limit=c(3,11))
+
+ggplot(aes(x=x,y=price),data=diamonds) + geom_point(color="blue") + scale_x_continuous(limit=c(3,11))
+
+ggplot(aes(x=x,y=price),data=diamonds) + geom_point(color="blue") + scale_x_continuous(limit=c(3,11)) + geom_smooth(color="red")
+
+summary(diamonds)
+
+cor.test(diamonds$price,diamonds$x)
+cor.test(diamonds$price,diamonds$y)
+cor.test(diamonds$price,diamonds$z)
+cor(diamonds$price,diamonds$x)
+```
+
+Observations about the above plot?
+
+There are few diamonds whose length is 0, these could be wrong entries.
+All the diamonds length varies between 4 to 10.74 excluding some having price at 0.
+With the increase in the length of the diamonds there is increase in the price of it as well
+
+
+Create a simple scatter plot of price vs depth.
+```{r}
+ggplot(aes(x=price),data=diamonds) + geom_histogram()
+ggplot(aes(x=depth),data=diamonds) + geom_histogram()
+
+ggplot(aes(x=depth,y=price),data=diamonds) + geom_point(color="blue")
+```
+
+Change the code to make the transparency of the points to be 1/100 of what they are now and mark the x-axis every 2 units
+```{r}
+ggplot(aes(x=depth,y=price),data=diamonds) +
+  geom_point(color="blue",alpha=1/100) +
+  scale_x_continuous(breaks=seq(0,80,2))
+```
+
+Correlation?
+```{r}
+cor.test(diamonds$depth,diamonds$price)
+```
+
+
+Create a scatterplot of price vs carat and omit the top 1% of price and carat values.
+
+```{r}
+ggplot(aes(x=carat,y=price),data=diamonds) +
+  geom_point(color="blue")
+```
+
+Create a scatterplot of price vs. volume (x * y * z).This is a very rough approximation for a diamond's volume.
+```{r}
+diamonds$volume <- diamonds$x * diamonds$y * diamonds$z
+ggplot(aes(x=volume,y=price),data=diamonds) +
+  geom_point(color="blue")
+
+# count(diamonds$volume == 0)
+# detach("package:plyr", unload=TRUE)
+
+data1 <- subset(diamonds,volume!=0 & volume <800)
+head(data1)
+cor.test(data1$price,data1$volume)
+
+```
+
+Subset the data to exclude diamonds with a volume
+greater than or equal to 800. Also, exclude diamonds
+with a volume of 0. Adjust the transparency of the
+points and add a linear model to the plot. (See the
+Instructor Notes or look up the documentation of
+geom_smooth() for more details about smoothers.)
+
+```{r}
+diamonds <- subset(diamonds,volume!=0 & volume <800)
+
+ggplot(aes(x=volume,y=price),data=diamonds) +
+  geom_point(color="blue",alpha=1/30,position=position_jitter(h=0)) +
+  geom_smooth(method="lm")
+
+```
+
+Use the function dplyr package
+to create a new data frame containing
+info on diamonds by clarity.
+
+Name the data frame diamondsByClarity
+
+The data frame should contain the following
+variables in this order.
+(1) mean_price
+(2) median_price
+(3) min_price
+(4) max_price
+(5) n
+
+```{r}
+library(dplyr)
+
+diamond_clarity <- group_by(diamonds,clarity)
+diamondsByClarity <- summarise(diamond_clarity,mean_price = mean(price),median_price=median(price), min_price=min(price), max_price=max(price), n = n())
+
+head(diamondsByClarity)
+
+```
+
+
+```{r}
+data(diamonds)
+library(dplyr)
+
+diamonds_by_clarity <- group_by(diamonds, clarity)
+diamonds_mp_by_clarity <- summarise(diamonds_by_clarity, mean_price = mean(price))
+
+diamonds_by_color <- group_by(diamonds, color)
+diamonds_mp_by_color <- summarise(diamonds_by_color, mean_price = mean(price))
+
+head(diamonds_mp_by_clarity)
+p1<-ggplot(aes(x=color,y=mean_price),data=diamonds_mp_by_color) + geom_bar(stat="identity")
+p2<-ggplot(aes(x=clarity,y=mean_price),data=diamonds_mp_by_clarity) + geom_bar(stat="identity")
+
+library(gridExtra)
+
+grid.arrange(p1,p2)
+```
+

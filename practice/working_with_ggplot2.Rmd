@@ -1,0 +1,162 @@
+---
+title: "ggplot2 tutorial"
+author: "Umesh"
+date: "Thursday, February 12, 2015"
+output: html_document
+---
+
+Ggplot2 is a large package and it is impossible to cover it all, so you need to refer to the Ggplot2 website for details of all the geoms, scales and stats. 
+
+Load the library
+
+```{r}
+library(ggplot2)
+```
+
+
+Load the dataset to work with the ggplot2 library
+
+
+```{r, echo=FALSE}
+data(iris)
+```
+
+Get the feel of the dataset
+```{r}
+head(iris,3)
+str(iris)
+tail(iris)
+summary(iris)
+```
+
+The Basics
+
+At the heart of every Ggplot2 chart is the data which must be in the form of a data frame. Plots are built up in layers, first the default data is specified and then the graphical objects, geoms and statistical views, stats are put on top. Many different layers can be added as required and each layer can use data from a different data frame.
+
+```{r}
+ggplot(iris, aes(Sepal.Length, Sepal.Width)) + geom_point()
+```
+
+
+The aes function is the aesthetic function and is used to detail what is displayed and how it is displayed. There is no need to use the typical R notation dataFrame$Variable when specifying variables. The variables can be specifically assigned to an axis if required.
+
+
+In the previous example the data has been specified in the ggplot command, but each layer can use it's own data frame,variables and aesthetics, so the following 2 lines produce the same plot.
+
+```{r}
+ggplot(iris,aes(Sepal.Length,Sepal.Width))+geom_point()
+ggplot()+geom_point(data=iris,aes(Sepal.Length,Sepal.Width))
+```
+
+Important point to note is that the layer specifications overrides those detailed in ggplot() so unexpected results are possible,
+
+```{r}
+ggplot(iris,aes(Sepal.Length,Sepal.Width))+geom_point(aes(Sepal.Width,Sepal.Length))
+```
+
+
+Geoms
+
+Geoms are the names for the types of shapes that represent the data on the chart, and there are two main types. The geom_point is an example of geom that works on individual data points, and so is straight forward to use as already shown. However a collective geom such as geom_boxplot requires some collection of data to work on. So to produce a box plot
+
+
+
+With Ggplot2 the data frame is part of the plot so when the plot is saved so is the data. This stops the old problem of trying to match data sets to charts when you revisit analysis done 6 months ago.
+
+
+```{r}
+p<-ggplot(iris,aes(Sepal.Length,Sepal.Width))+geom_point()
+#Save the plot
+save(p,file="FirstGgplot.RData")
+#Load
+load("FirstGgplot.RData")
+#Save to image
+ggsave("PlotImage.png")
+```
+
+
+```{r}
+ggplot(iris, aes(Species, Sepal.Width)) + geom_boxplot()
+
+ggplot(iris, aes(Sepal.Length, Sepal.Width)) + geom_boxplot(aes(group=Sepal.Length))
+library(plyr)
+ggplot(iris, aes(Sepal.Length, Sepal.Width)) + geom_boxplot(aes(group = round_any(Sepal.Length, 0.5)))
+```
+
+Working with aesthetics of the plots::
+
+```{r}
+ggplot(iris, aes(Sepal.Length, Sepal.Width)) + geom_point(aes(color=Species))
+
+
+ggplot(iris, aes(Petal.Length, Petal.Width)) + geom_point(aes(color=Species))
+
+```
+
+Scales
+
+The colours and shapes used in the chart can be manually adjusted if you don't like the defaults, so the following code and chart demonstrates the use of manual scales
+
+```{r}
+
+ggplot(iris, aes(Sepal.Length, Sepal.Width)) + geom_point(aes(color = Species,shape =Species)) + scale_colour_manual(values = c("red", "green", "blue")) + scale_shape_manual(values = c(16, 17, 18))
+
+```
+
+
+Faceting::
+
+```{r}
+ggplot(iris, aes(Sepal.Length, Sepal.Width)) + geom_point() + facet_wrap(~Species)
+
+ggplot(iris, aes(Sepal.Length, Sepal.Width)) + geom_point(aes(color=Species)) + facet_wrap(~Species)
+
+ggplot(iris, aes(Sepal.Length, Sepal.Width)) + geom_point() + facet_wrap(~Species)
+
+```
+
+
+Working with Diamonds dataset:::
+
+```{r}
+
+data(diamonds)
+
+head(diamonds)
+
+tail(diamonds)
+
+table(diamonds$cut)
+
+table(diamonds$color)
+
+table(diamonds$clarity)
+
+by(diamonds$price,diamonds$cut,summary)
+
+by(diamonds$price,diamonds$clarity,summary)
+
+by(diamonds$price,diamonds$clarity,max)
+
+ggplot(diamonds,aes(carat,price)) + geom_point(aes(color=color))
+
+ggplot(diamonds,aes(carat,price)) + geom_point(aes(color=color,shape=cut))
+
+ggplot(diamonds,aes(carat,price)) + geom_point(aes(color=color)) + facet_wrap(~cut)
+
+ggplot(diamonds,aes(cut,price)) + geom_boxplot()
+
+ggplot(diamonds,aes(cut)) + geom_bar()
+
+ggplot(diamonds,aes(color)) + geom_bar()
+
+ggplot(diamonds,aes(cut)) + geom_bar() + facet_wrap(~color)
+
+ggplot(diamonds,aes(cut)) + geom_bar() + facet_wrap(~clarity)
+
+```
+
+
+
+
+

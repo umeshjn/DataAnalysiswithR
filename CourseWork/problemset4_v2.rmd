@@ -1,0 +1,233 @@
+---
+title: "Problem set 4 Revision"
+author: "Umesh"
+date: "Wednesday, March 04, 2015"
+output: html_document
+---
+Task is to create a scatterplot of price vs x using the ggplot syntax.
+
+```{r}
+
+data(diamonds)
+
+head(diamonds,2)
+
+ggplot(data=diamonds,aes(x=x,y=price)) +
+  geom_point()
+
+ggplot(data=diamonds,aes(x=x,y=price)) +
+  geom_point(color="blue")
+
+summary(diamonds$price)
+summary(diamonds$x)
+
+ggplot(data=diamonds,aes(x=x,y=price,color=cut)) +
+  geom_jitter(alpha=1/20) +
+  xlim(3,11)
+
+ggplot(data=diamonds,aes(x=x,y=price)) +
+  geom_point(color="blue") +
+  xlim(3,11)
+
+ggplot(data=diamonds,aes(x=x,y=price,color=cut)) +
+  geom_point() +
+  xlim(3,11)
+
+
+```
+
+Observations:
+
+There are few diamonds whose length is 0, these could be wrong entries.
+All the diamonds length varies between 4 to 10.74 excluding some having price at 0.
+With the increase in the length of the diamonds there is increase in the price of it as well.
+Majority if the diamonds are between the range of 4 to 7.5 length
+
+
+
+Correlation between price and x:
+
+```{r}
+
+cor.test(x=diamonds$x,y=diamonds$price)
+cor.test(x=diamonds$y,y=diamonds$price)
+cor.test(x=diamonds$z,y=diamonds$price)
+
+```
+
+
+Create a simple scatter plot of price vs depth.
+```{r}
+ggplot(data=diamonds,aes(x=depth,y=price)) +
+  geom_point()
+
+ggplot(data=diamonds,aes(x=depth,y=price)) +
+  geom_point(color="blue")
+
+ggplot(data=diamonds,aes(x=depth,y=price)) +
+  geom_point(alpha=1/100)
+
+
+ggplot(data=diamonds,aes(x=depth,y=price)) +
+  geom_point(alpha=1/100,color="blue") +
+  scale_x_continuous(breaks=seq(0,80,2))
+
+
+
+ggplot(data=diamonds,aes(x=depth,y=price,color=cut)) +
+  geom_point(alpha=1/100) +
+  scale_x_continuous(breaks=seq(0,80,2))
+
+
+```
+
+Correlation between price and depth
+
+```{r}
+
+cor.test(diamonds$price,diamonds$depth)
+
+```
+
+Notes:
+There is no correlation between the price and depth of the diamonds.  Correlation co efficient is very very negligible.
+
+
+
+
+Create a scatterplot of price vs carat and omit the top 1% of price and carat values.
+
+
+```{r}
+
+ggplot(data=diamonds,aes(x=carat,y=price)) +
+  geom_point()
+
+
+ggplot(data=diamonds,aes(x=carat,y=price,color=cut)) +
+  geom_point()
+
+
+ggplot(data=diamonds,aes(x=carat,y=price,color=color)) +
+  geom_point()
+
+ggplot(data=diamonds,aes(x=carat,y=price,color=clarity)) +
+  geom_point()
+
+```
+
+
+Create a scatterplot of price vs. volume (x * y * z). This is a very rough approximation for a diamond's volume.
+
+
+```{r}
+
+diamonds$volume <- diamonds$x * diamonds$y * diamonds$z
+
+
+summary(diamonds$volume)
+
+
+ggplot(data=diamonds,aes(x=volume,y=price)) +
+  geom_point()
+
+ggplot(data=diamonds,aes(x=volume,y=price)) +
+  geom_point() +
+  xlim(0,1000)
+
+
+ggplot(data=diamonds,aes(x=volume,y=price)) +
+  geom_point() +
+  xlim(0,750)
+
+
+ggplot(data=diamonds,aes(x=volume,y=price)) +
+  geom_jitter(alpha=1/100) +
+  xlim(0,750)
+
+
+```
+
+
+Observations:
+
+There are few with zero volume.
+There is exponential increase in the price of the diamonds as the volume increases.
+Almost all the diamonds  volume is less than 500 except few above 500 and less than 1000. Only one at around 3800
+Majority of the diamonds are concentrated below the 200 in volume.
+
+
+Correlation between price and volume
+
+```{r}
+
+cor.test(diamonds$volume,diamonds$price)
+
+with(subset(diamonds,volume>0 & volume <= 800),cor.test(volume,price))
+
+```
+
+
+
+
+
+```{r}
+
+
+ggplot(aes(x=volume,y=price),data=diamonds) +
+  geom_point(color="blue",alpha=1/30,position=position_jitter(h=0)) +
+  geom_smooth(method="lm")
+
+
+ggplot(aes(x=volume,y=price),data=subset(diamonds,volume>0 & volume <= 800)) +
+  geom_point(color="blue",alpha=1/30,position=position_jitter(h=0)) +
+  geom_smooth(method="lm")
+
+
+ggplot(aes(x=volume,y=price),data=subset(diamonds,volume >0 & volume <= 800)) +
+  geom_point(color="blue",alpha=1/30,position=position_jitter(h=0)) +
+  geom_smooth(method="lm")
+
+```
+
+Use the function dplyr package to create a new data frame containing info on diamonds by clarity.
+
+
+```{r}
+
+diamondsByClarity <- diamonds %>% group_by(clarity) %>% 
+  summary(mean_price = mean(price), median_price = median(price), min_price = min(price), max_price = max(price), n = n())
+  
+head(diamondsByClarity,2)
+```
+
+
+
+Your task is to write additional code to create two bar plots on one output image using the grid.arrange() function from the package gridExtra.
+
+```{r}
+
+diamonds_by_clarity <- group_by(diamonds, clarity)
+diamonds_mp_by_clarity <- summarise(diamonds_by_clarity, mean_price = mean(price))
+
+diamonds_by_color <- group_by(diamonds, color)
+diamonds_mp_by_color <- summarise(diamonds_by_color, mean_price = mean(price))
+
+
+p1<-ggplot(aes(x=color,y=mean_price),data=diamonds_mp_by_color) + geom_bar(stat="identity")
+p2<-ggplot(aes(x=clarity,y=mean_price),data=diamonds_mp_by_clarity) + geom_bar(stat="identity")
+
+grid.arrange(p1,p2)
+
+```
+
+Observation from the above plots:
+
+Mean price of the Diamonds with color J is highest. 
+Mean price of Diamonds with color D is lowest. 
+Mean price of Diamonds with SI2 clarity is highest
+Mean price of Diamonds with VVS1 clarity is lowest.
+And there is no much difference in mean prices between other colored or clarity diamonds.
+
+
+

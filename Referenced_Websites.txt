@@ -1,0 +1,16 @@
+http://adv-r.had.co.nz/Style.html
+
+http://r.ramganalytics.com/r/split-a-column-by-a-character-using-colsplit-function/
+
+http://www.cookbook-r.com/Graphs/Bar_and_line_graphs_%28ggplot2%29/
+
+http://zevross.com/blog/2014/08/04/beautiful-plotting-in-r-a-ggplot2-cheatsheet-3/
+
+https://support.rstudio.com/hc/en-us/articles/200488468-R-Markdown
+
+http://www.wekaleamstudios.co.uk/supplementary-material/
+
+http://docs.ggplot2.org/current/scale_date.html
+
+http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html
+

@@ -1,0 +1,17 @@
+---
+title: "problemset_5"
+author: "Umesh"
+date: "Thursday, February 19, 2015"
+output: html_document
+---
+
+We are going to use the diamond dataset for this problemset
+
+# Create a histogram of diamond prices.
+# Facet the histogram by diamond color
+# and use cut to color the histogram bars.
+
+```{r}
+
+```
+

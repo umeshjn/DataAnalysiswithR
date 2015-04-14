@@ -1,0 +1,121 @@
+---
+title: "ggplot-tutorial_minimaxir"
+author: "Umesh"
+date: "Thursday, February 19, 2015"
+output: html_document
+---
+Install and load the packages needed
+
+
+```{r}
+install.packages(c("ggplot2","RColorBrewer","scales"))
+library(ggplot2); library(scales); library(grid); library(RColorBrewer)
+
+setwd("C:/Umesh JN/Personal/Learning/Data Science/NanoDegree-Udacity/DataAnalysiswithR/practice")
+
+```
+
+Load and read the data 
+
+```{r}
+df <- read.csv("buzzfeed_linkbait_headlines.csv", header=T)
+
+head(df)
+
+tail(df)
+
+str(df)
+```
+
+Plot the historgram and save it
+
+```{r}
+ggplot(df, aes(listicle_size)) +
+  geom_histogram(binwidth=1) 
+
+ggsave("histo_1.png", dpi=300, width=4, height=3)
+ggsave("histo_2.jpg", dpi=300, width=15, height=10)
+ggsave("histo_3.png", dpi=300, width=15, height=10)
+
+```
+Adding labels
+
+```{r}
+ggplot(df, aes(listicle_size)) +
+  geom_histogram(binwidth=1) +
+  labs(title="Distribution of Listicle Sizes for BuzzFeed Listicles", x="# of Entries in Listicle", y="# of Listicles")
+```
+
+Adding color
+
+```{r}
+ggplot(df, aes(listicle_size)) +
+  geom_histogram(binwidth=1,fill="blue") +
+  labs(title="Distribution of Listicle Sizes for BuzzFeed Listicles", x="# of Entries in Listicle", y="# of Listicles")
+```
+
+Adding the x continous scale::
+```{r}
+ggplot(df, aes(listicle_size)) +
+  geom_histogram(binwidth=1,fill="blue") +
+  labs(title="Distribution of Listicle Sizes for BuzzFeed Listicles", x="# of Entries in Listicle", y="# of Listicles") +
+  scale_x_continuous(breaks=seq(0,50,5))
+```
+
+Adding the y scale with comma::
+```{r}
+ggplot(df, aes(listicle_size)) +
+  geom_histogram(binwidth=1,fill="maroon") +
+  labs(title="Distribution of Listicle Sizes for BuzzFeed Listicles", x="# of Entries in Listicle", y="# of Listicles") +
+  scale_x_continuous(breaks=seq(0,50,5)) +
+  scale_y_continuous(labels=comma)
+```
+
+Making scatterplot::
+
+```{r}
+ggplot(df,aes(x=listicle_size,y=num_fb_shares)) +
+  geom_point()
+```
+
+Scaling the y axis::
+
+```{r}
+ggplot(df,aes(x=listicle_size,y=num_fb_shares)) +
+  geom_point() +
+  scale_y_log10(labels=comma)
+```
+
+Get the summary of the listicle size and number of fb shares
+
+```{r}
+summary(df$listicle_size)
+summary(df$num_fb_shares)
+```
+
+Adding color:
+
+```{r}
+ggplot(df,aes(x=listicle_size,y=num_fb_shares)) +
+  geom_point(color="blue") +
+  scale_y_log10(labels=comma)
+```
+
+
+Adding smooth curve::
+
+```{r}
+ggplot(df,aes(x=listicle_size,y=num_fb_shares)) +
+  geom_point(color="blue") +
+  scale_y_log10(labels=comma) +
+  geom_smooth(color="red")
+```
+
+Change the sequence of the y axis:
+
+```{r}
+ggplot(df,aes(x=listicle_size,y=num_fb_shares)) +
+  geom_point(alpha=0.05,color="blue") +
+  scale_y_log10(labels=comma,breaks=10^(0:6)) +
+  geom_smooth(color="red") 
+```

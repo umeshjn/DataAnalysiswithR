@@ -1,0 +1,1393 @@
+Exploring the Financial Contributions made by Wisconsin for 2012 Presidential Elections - by Umesh 
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using
+# in your analysis in this code chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk.
+# This prevents the code from displaying in the knitted HTML output.
+# You should set echo=FALSE for all code chunks in your file.
+
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(reshape2)
+
+```
+
+------
+
+##Loading the data, adding or modifying and getting the feel of the contents of the dataset. 
+
+```{r echo=FALSE, Load_the_Data}
+
+# Load the Data and get a sneak peak into the dataset
+
+wi <- read.csv("../project/wi.csv")
+
+dim(wi)
+
+str(wi)
+
+head(wi,3)
+
+```
+
+####Observations from the initial look into the dataset:
+
+* There are 69304 observations with 18 variables in the dataset.
+* All are categorical variables except the contb_receipt_amt and file_num variable.
+
+
+This is a interesting data set and would be interesting to find:
+
+* Who contributed most ?
+* Which city in Wisconsin contributed more and to whom?
+* Which candidate got the highest contribution?
+* Which party got the highest and which party got the least?
+* Are there any female candidates and how did they perform?
+
+In order to answer few of the above questions, need to add couple of more attributes like gender and party of the candiate. 
+
+### Creating new variables and modifying the existing variable values
+
+#### Adding Party Variable
+
+```{r echo=FALSE, Add_party_of_Candidates}
+
+# Below code is used for creating and adding value to Party variable for each candidate
+wi$party <- ifelse(wi$cand_nm == "Romney, Mitt","Republican Party",
+    ifelse(wi$cand_nm == "Obama, Barack","Democratic Party",
+		ifelse(wi$cand_nm == "Bachmann, Michele","Republican Party",
+		ifelse(wi$cand_nm == "Gingrich, Newt","Republican Party",
+    ifelse(wi$cand_nm == "Paul, Ron","Republican Party",
+    ifelse(wi$cand_nm == "McCotter, Thaddeus G","Republican Party",
+    ifelse(wi$cand_nm == "Pawlenty, Timothy","Republican Party",
+    ifelse(wi$cand_nm == "Roemer, Charles E. 'Buddy' III","Republican,Reform & Americans Elect", 
+    ifelse(wi$cand_nm == "Perry, Rick","Republican Party",
+    ifelse(wi$cand_nm == "Cain, Herman","Republican Party",
+    ifelse(wi$cand_nm == "Johnson, Gary Earl","Libertarian Party",
+    ifelse(wi$cand_nm == "Huntsman, Jon","Republican Party",      
+    ifelse(wi$cand_nm == "Santorum, Rick","Republican Party",      
+    ifelse(wi$cand_nm == "Stein, Jill","Green Party", "NA")
+    )))))))))))))
+
+wi$party <- as.factor(wi$party)
+
+table(wi$party)
+
+head(wi,3)
+
+```
+
+#### Adding Gender Variable
+
+```{r echo=FALSE, Add_Gender_of_Candidates}
+
+# Below code is used for creating and adding value to gender variable for each candidate
+wi$gender<- ifelse(wi$cand_nm == "Romney, Mitt","Male",
+    ifelse(wi$cand_nm == "Obama, Barack","Male",
+		ifelse(wi$cand_nm == "Bachmann, Michele","Female",
+		ifelse(wi$cand_nm == "Gingrich, Newt","Male",
+    ifelse(wi$cand_nm == "Paul, Ron","Male",
+    ifelse(wi$cand_nm == "McCotter, Thaddeus G","Male",
+    ifelse(wi$cand_nm == "Pawlenty, Timothy","Male",
+    ifelse(wi$cand_nm == "Roemer, Charles E. 'Buddy' III","Male", 
+    ifelse(wi$cand_nm == "Perry, Rick","Male",
+    ifelse(wi$cand_nm == "Cain, Herman","Male",
+    ifelse(wi$cand_nm == "Johnson, Gary Earl","Male",
+    ifelse(wi$cand_nm == "Huntsman, Jon","Male",      
+    ifelse(wi$cand_nm == "Santorum, Rick","Male",      
+    ifelse(wi$cand_nm == "Stein, Jill","Male", "NA"
+		))))))))))))))
+
+wi$gender <- as.factor(wi$gender)
+
+table(wi$gender)
+
+head(wi, 3)
+
+```
+
+#### Modifying contbr_zip Variable
+
+* Value of the contbr_zip variable which is the zip code of the places are not uniform five digit numbers.
+* Having them uniform and clean should very useful for exploring. So modifying the values of the contbr_zip variable to uniform five digit codes by extracting only the first five digits.
+* This should help us to find people from which zip code contributed most.
+
+#### Top 5 Zip codes in terms of contributions count
+
+```{r echo=FALSE, modifying_zipcode_values}
+
+#Below code extracts five digit zip code from the contbr_zip variable and updates it
+wi$contbr_zip <- substr(wi$contbr_zip, 1, 5)
+
+head(sort(table(wi$contbr_zip), decreasing = TRUE), 5)
+
+```
+
+#### Converting the date variable into Date type
+
+```{r echo=FALSE, factor_to_date}
+
+# Converting the date variable type to Date
+wi$contb_receipt_dt <- as.Date(wi$contb_receipt_dt, format = "%d-%b-%y")
+
+```
+
+* This date variable should help us to explore the variation in the contribution over time. 
+* Having it converted should help us get more insight
+
+
+####Summary of the dataset:
+
+```{r echo=FALSE, summary_highlights}
+
+summary(wi)
+
+```
+
+####Highlights from the Summary:
+* Barack Obama is the candidate with highest number of contributions.
+* City of Madison has highest number of contributions with Milwaukee coming second.
+* Retired people are highest contributors by occupation.
+* Least amount contributed is negative -5000 and maximum is 7500.
+* Democratic Party getting the highest number of contributions with Republican party coming second by huge difference.
+* There is only one female candidate who has very less number contributions.
+* There are some records which are for 2008 elections and some do not seem to belong to any. 
+* General elections of 2012 have recieved more contributions than Primary elections.
+
+Questions arising after viewing the summary of the dataset:
+
+* Even though Obama had highest number of contributions how much amount did he really get?
+* Who got the second highest contribution?
+* How much did the single female candidate get?
+* Apart from Retired people which other occupation people contributed more?
+* Why there is a negative minimum?
+* What are the other cities which contributed more? Which city contributed least?
+* Why there are records for 2008 General and Primary elections ?
+
+
+
+####Verifying the dataset to check why there are records for G2008 and P2008 along with negative values
+
+
+```{r echo=FALSE, deductions}
+
+deductions <- subset(wi, election_tp. %in% c("P2008","G2008","") | 
+                       contb_receipt_amt < 0)
+
+head(deductions)
+
+tail(deductions)
+
+```
+
+#### Observations:
+
+* These records are the refunds made by the political parties to the previous election contributors which was in 2008 and also reattribution/redesignation which is be for the funds contributed in 2012. 
+
+
+####It would be interesting to check the number of records in refunds and summary of this subset:
+
+
+```{r echo=FALSE, deductions_1}
+
+dim(deductions)
+
+summary(deductions)
+
+sum(deductions$contb_receipt_amt)
+
+by(deductions$contb_receipt_amt, deductions$party, sum)
+
+```
+
+####Highlights of the deductions made:
+
+* Total of 632 deductions were made
+* 466 deductions were made from Democratic Party which is total of $88625.75
+* Republican Party had 165 deductions which is total of $208077.1
+* Total amount refunded is 19629 and total redesignated/reattributed is 277099.3
+* So in total deducions from the contribution is $296728.3
+
+####Removing the refunds/deductions made is better before starting to explore the contributions:
+
+* It would have been useful if there was more information on how the deductions relate to other contributions made.
+* Since there is no clear information removing the observations with are negative and considering only the positive contributions.
+
+
+```{r echo=FALSE, remove_refunds}
+
+contributions <- subset(wi, election_tp. %in% c("P2012", "G2012") & 
+                          contb_receipt_amt > 0)
+
+```
+
+#### Splitting the candidate name variable into first and last name variables 
+
+```{r echo=FALSE, split_firstandlastname}
+
+#Splitting the candidate name into first and last name and storing into different variables
+candnames <- colsplit(contributions$cand_nm, ", ", 
+                      names = c("lastname", "firstname"))
+
+contributions$cand_firstname <- candnames$firstname
+contributions$cand_lastname <- candnames$lastname
+
+dim(contributions)
+
+summary(contributions)
+
+```
+
+------
+
+# Univariate Plots Section
+
+#### How is the distribution of number of contributions for each Candidates? Did the winner get more number of contributions than others?
+
+```{r echo=FALSE, fig.width=14, fig.height=8, Univariate_Plots_distribution_by_candidates}
+ 
+table(contributions$cand_lastname)
+
+ggplot(data = contributions,aes(cand_lastname, fill = cand_lastname)) +
+  geom_bar() +
+  xlab("Candidates") +
+  ylab("Total Number of Contributions") +
+  ggtitle("Distribution of Contributions by Candidates") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4,
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+
+#### Observations and questions from the distribution of contributions by candidates
+
+* Obama had the highest number of contributions which is total of 52072.
+* Being winner Obama getting highest number contributions is not very surprising but did he get highest amount as well? It would be interesting to know.
+* Romney who was his close competitor comes far second. There is huge difference in the number of contributions what Romney got compared to Obama. Is it because of the number of candidates being more from Romney's Republican party? Did the Republican party contributions got divided between the large number of candidates?
+* McCotter has the least with only one contribution.
+
+
+#### How did the distribution of the contribution vary by Parties? Did the winning party get the highest number of contributions?
+
+```{r echo=FALSE, fig.width=14, fig.height=8, Univariate_Plots_distribution_by_parties}
+ 
+table(contributions$party)
+
+ggplot(data = contributions,aes(party, fill = party)) +
+  geom_bar() +
+  xlab("Political Parties") +
+  ylab("Total number of Contributions") +
+  ggtitle("Distribution of the contribution by Parties") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4,face = "bold"),
+        plot.title = element_text(size = 20, face= "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold",size = 15,vjust = -0.35),
+        axis.title.y = element_text(face = "bold",vjust = 0.35,size = 15))
+
+```
+
+#### Observations and questions from the distribution of contributions by parties
+
+* Democratic party has the highest number of contributions with Republican Party coming second.
+* This is not very surprising as they are the major political parties and top two contenders.
+* Obama being the only candidate of the Democratic Party has same number of contributions as his party
+* Republican party had 10 candidates from the time the election started and got way less number of contributions than Democratic Party.
+* Given the number of candidates Republican Party had, they should have got more than what they ended up.
+* It would be interesting to know if the huge difference in the number of contributions between the top two parties really have the same difference when it comes to the amount contributed?
+* One more surprise is one candidate was the nominee of three different parties during 2012 elections.
+
+
+#### How is the distribution of contributions among Top 10 Cities? Which city contributed the most and which came second?
+
+
+```{r echo=FALSE, fig.width=14, fig.height=8, Univariate_Plots_distribution_by_top_10_cities}
+ 
+by_cities_univariate <- contributions %>%
+              group_by(contbr_city) %>% 
+              summarise(count = n())  %>%
+              arrange(desc(count))
+
+dim(by_cities_univariate)
+
+top_cities_univariate <- head(by_cities_univariate, 10)
+
+top_cities_univariate
+
+ggplot(data = top_cities_univariate, aes(x = contbr_city,y = count,
+                                         fill = contbr_city)) +
+  geom_bar(stat = "identity") +
+  xlab("Cities") +
+  ylab("Total number of Contributions") +
+  ggtitle("Contributions by Top 10 Cities") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15,vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35,size = 15))
+
+```
+
+#### Observations and questions from the distribution of contributions by top 10 cities
+
+* Madison is the city with highest number of contributions with Milwaukee coming close second.
+* Madison being the capital city has the highest contributions.
+* Milwaukee being the biggest city in state has the second highest number of contributions
+* Kenosha comes at 10th place.
+* The number of contributions from top 2 cities is more than the contributions from rest of the 8 cities in top 10.
+* This clearly shows the key role played by the people from the top contributing cities
+* It would be interesting to know how these cities contributed for each party and candidate.
+
+
+#### How is the Distribution of records among Bottom 10 Cities? Which city contributed the least?
+
+```{r echo=FALSE, fig.width=14, fig.height=8, Univariate_Plots_distribution_by_bottom_10_cities}
+
+bottom_cities_univariate <- tail(by_cities_univariate,10)
+
+bottom_cities_univariate
+
+```
+
+#### Observations from the distribution of records by bottom 10 cities
+
+* One interesting thing after checking the least contributing cities is the data is not fully cleaned.
+* There are certain city names which seems to be typed into the dataset wrongly.
+Example: There is a city with the recorded name as "W MILWAAUKEE" which is definitely for Milwaukee. Going by this it looks like there is a need to clean the data set for the city names.
+* There is need to check and clean the data set further but since it is out of scope of the project ignoring it for now.
+* All least contributing cities have only one contribution.
+
+
+
+#### How is the distribution of the contributions by Zip Code?
+
+```{r echo=FALSE, fig.width=14, fig.height=8, Univariate_Plots_distribution_by_zip}
+
+by_zipcodes_univariate <- contributions %>%
+              group_by(contbr_zip) %>% 
+              summarise(count = n())  %>%
+              arrange(desc(count))
+
+top_zipcodes_univariate <- head(by_zipcodes_univariate,10)
+
+top_zipcodes_univariate
+
+ggplot(data = top_zipcodes_univariate, aes(x = contbr_zip, y = count, 
+                                           fill = contbr_zip)) +
+  geom_bar(stat = "identity") +
+  xlab("Zip Codes") +
+  ylab("Total Count") +
+  ggtitle("Distribution by Top 10 Zip Codes") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face="bold",vjust=0.35,size=15))
+
+```
+
+#### Observations from the distribution of the contributions by top 10 zip codes
+
+* 53711 zip code has the highest number of contributions. As expected its the zip code of Madison which is city with highest number of contributions.
+* Even the top second zip code belongs to Madison city.
+* Third and fourth belong to Milwaukee which is the city with second highest number of contributions.
+
+
+#### How is the distribution of the contributions by Occupation? People from which profession contributed the most for the elections? What are the other occupations of the top contributors?
+
+```{r echo=FALSE, fig.width=16, fig.height=8, Univariate_Plots_distribution_by_top_10_occupation}
+ 
+by_occupation_univariate <- contributions %>%
+              group_by(contbr_occupation) %>% 
+              summarise(count = n())  %>%
+              arrange(desc(count))
+
+dim(by_occupation_univariate)
+
+top_occupation_univariate <- head(by_occupation_univariate, 10)
+
+top_occupation_univariate
+
+ggplot(data = top_occupation_univariate, aes(x = contbr_occupation, y = count,
+                                             fill = contbr_occupation)) +
+  geom_bar(stat = "identity") +
+  xlab("Occupations") +
+  ylab("Total Number of Contributions") +
+  ggtitle("Contributions by Top 10 Occupations") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+#### Observations and questions from the contributions by top 10 occupations
+
+* There are 4138 occupations mentioned in the dataset
+* Retired people are the highest contributors.
+* Physicans are second highest contributors
+* Third and fourth are those who have not provided the occupation name. This goes to show lot of people do not give their occupation details.
+* Surprising thing coming out of this is people who are retired are more interested in the politics and government than others. Also it is really surprising how did all these retired people got to spend so much on the elections without worrying about their retired life.
+* With Homemakers and Not Employed also making it to the top 10 occupations, its very surprising how people who are not in regular jobs contributing so much to the elections.
+
+
+#### How is the distribution of the contributions by Contributors?
+
+```{r echo=FALSE, fig.width=14, fig.height=8, Univariate_Plots_distribution_by_contributors}
+
+by_contributors_univariate <- contributions %>%
+              group_by(contbr_nm) %>% 
+              summarise(count = n())  %>%
+              arrange(desc(count))
+
+top_contributors_univariate <- head(by_contributors_univariate,10)
+
+top_contributors_univariate
+
+ggplot(data = top_contributors_univariate,aes(x = contbr_nm, y = count, 
+                                              fill = contbr_nm)) +
+  geom_bar(stat = "identity") +
+  xlab("Contributors") +
+  ylab("Total Number of Contributions") +
+  ggtitle("Distribution by Top 10 Contributors") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4,
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+#### Observations from the distribution of the data by contributors
+
+* ANDERSON, TERESA contributed 98 times.
+* VOLZ, WILLIAM contributed 88 times.
+
+Below table shows repeated contributions::
+
+
+```{r echo=FALSE}
+
+table(by_contributors_univariate$count)
+
+```
+
+* Thousands of people have contributed more than once.
+Example: 3899 individuals have contributed twice
+* Major percentage have contributed more than once.
+* Since the there is no unique identifier for the contributors it would be difficult to find number of contributions by unique users as names can be same for lot of people.
+
+
+#### How many contributions has the female candidate got and how is the distribution by gender?
+
+```{r echo=FALSE, fig.width=8, fig.height=6, Univariate_Plots_distribution_by_gender}
+
+table(contributions$gender)
+
+ggplot(data = contributions, aes(gender, fill = gender)) +
+  geom_bar() +
+  xlab("Gender") +
+  ylab("Total Count") +
+  ggtitle("Distribution by Gender")
+
+```
+
+#### Observations from the distribution of the data by gender
+
+* With only one female candidate and someone who was not major candidate, the number of contributions is very very less compared to the male candidates. 
+* This is not surprising as there are total of 14 candidates and among which only one is female.
+
+
+#### Proportion of contributions by gender
+
+```{r echo=FALSE}
+
+table(contributions$gender)/68603
+
+```
+
+
+#### How contribution varies over time?
+
+```{r echo=FALSE, fig.width=14, fig.height=8, Univariate_Plots_distribution_by_date}
+
+min(contributions$contb_receipt_dt)
+
+max(contributions$contb_receipt_dt)
+
+table(contributions$contb_receipt_dt)
+
+ggplot(data = contributions, aes(x = contb_receipt_dt)) +
+  geom_histogram() +
+  scale_x_date(breaks = "2 month") +
+  xlab("Date") +
+  ylab("Total Number of Contributions") +
+  ggtitle("Variation in Contributions by Date") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4,face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15,vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+ggplot(data = contributions,aes(x = contb_receipt_dt)) +
+  geom_histogram(color = "blue",binwidth = 5) +
+  scale_x_date(breaks = "2 month") +
+  xlab("Date") +
+  ylab("Total Number of Contributions") +
+  ggtitle("Variation in Contributions by Date") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+#### Observations from the distribution and variation of the contributions over time:
+
+* Contributions for the elections of 2012 started on 2011-01-01 and 2012-12-31
+* One thing to notice going by dates is contributions were given even after the elections day
+* There is exponential increase in the number of contributions as the elections near.
+* Most contributions are during the last few months before the election day.
+* This seems to be when the fight for the Presidential post is finally between the two contendors.
+* Major number of contributions coming between September 2012 to November 2012
+
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+
+* There are 69304 observations with 18 variables in the dataset.
+* For exploration of the dataset observations with negative contributions were removed and also 4 new variables were added. Hence the new observations value is 68603 with 22 variables.
+* All are categorical variables except the contb_receipt_amt and file_num variables.
+
+
+Some of the other observations:
+
+* Barack Obama is the candidate with highest number of contributions.
+* City of Madison has highest number of contributions with Milwaukee coming second.
+* Retired people are highest contributors by occupation
+* Least amount contributed is negative -5000 and maximum is 7500.
+* Negative values were refunds and other deductions so had to remove from the dataset for analysing the contributions
+* Democratic Party getting the highest number of contribution with Republican party second by huge difference.
+* There is only one female candidate with less contributions.
+* Major number of contributions coming between September 2012 to November 2012
+
+
+### What is/are the main feature(s) of interest in your dataset?
+
+contb_receipt_amt, cand_nm, contbr_city, party, gender and contb_receipt_dt
+
+Here the most interesting question is how all of these variables contributed in the variation in the amount contributed to the elections and how did it play a major role in deciding the winner.
+
+### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
+
+contbr_occupation could be one more variable which could help.
+
+### Did you create any new variables from existing variables in the dataset?
+
+Below variables were created:
+
+* party - Political party of the candidate
+* gender - Gender of the candidates.
+* cand_firstname - First name of the candidate
+* cand_lastname - Last name of the candidate
+
+### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
+
+Firstly there were negative values for the contb_receipt_amt variable. When digged into it found that they were related to the refunds made by the party to the contributors who had contributed in 2008 as well as some other adjustments made during 2012 elections. There were removed for analysing the dataset.
+
+Also cleaned the contbr_zip variable value to include only the 5 digit zip code as the original values had subcodes also for lot of entries.
+
+------
+
+# Bivariate Plots Section
+
+
+###Explore how the contribution of the amount varies for candidates.
+
+```{r echo=FALSE, fig.width=14, fig.height=8, bivariate_Plots_contribution_by_candidates}
+ 
+by(contributions$contb_receipt_amt, contributions$cand_lastname, summary)
+
+by(contributions$contb_receipt_amt, contributions$cand_lastname, sum)
+
+ggplot(data = contributions, aes(x = cand_lastname, y = contb_receipt_amt,
+                              fill = cand_lastname)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(breaks = seq(0,5250000,500000))+
+  xlab("Candidates") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Candidate wise Contributions") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+ggplot(data=subset(contributions, contb_receipt_amt <= 1000),
+       aes(x = cand_lastname, y = contb_receipt_amt, fill = cand_lastname)) +
+  geom_boxplot() +
+  xlab("Candidates") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Candidate wise Contributions") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4,
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+by(contributions$contb_receipt_amt, contributions$cand_lastname, IQR)
+
+```
+
+####Observations and questions by exploring the variation in the amount contributed for different candidates:
+
+* Obama had the maximum amount of contribution. 
+* Romney had the second highest contribution.
+* Its very surprising too see the difference in contributed amount between Obama and Romney top two candidates. The difference in number of contributions was too big between them.
+* What is the reason behind this? It would be interesting to know.
+* Inspite of 9 other contendors from his own party, Romney still comes close second to Obama which is very surprising. If there were few competitions from his own party he could have also got more contributions from his party contributors.
+* Romney had higher mean contribution than Obama.
+* Romney also had 75% of his contributions below $300
+* Obama had 3rd quartile least among all candidates
+* Pawlenty had the highest mean
+* McCotter with least contribution of $100 which was the only contribution he had got.
+* Obama had one of the least IQR
+
+
+
+###Explore how the contribution of the amount varies for different parties:
+
+```{r echo=FALSE,fig.width=12, fig.height=8, bivariate_Plots_contribution_by_parties}
+ 
+by(contributions$contb_receipt_amt, contributions$party, sum)
+
+by(contributions$contb_receipt_amt, contributions$party, summary)
+
+ggplot(data = contributions, aes(x = party, y = contb_receipt_amt, 
+                                 fill = party)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(breaks = seq(0,5500000,500000)) + 
+  xlab("Parties") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Party wise Contributions") +
+  theme(axis.text.x = element_text( size = 10, vjust = 0.4,face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold",size = 15,vjust = -0.35),
+        axis.title.y = element_text(face = "bold",vjust = 0.35,size = 15))
+
+ggplot(data=subset(contributions,contb_receipt_amt <= 500),
+       aes(x = party,y = contb_receipt_amt, fill = party)) +
+  geom_boxplot() +
+  xlab("Parties") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Contributions for each Party") +
+  theme(axis.text.x = element_text( size = 10, vjust = 0.4,face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold",size = 15,vjust = -0.35),
+        axis.title.y = element_text(face = "bold",vjust = 0.35,size = 15))
+
+
+by(contributions$contb_receipt_amt, contributions$party, IQR)
+
+```
+
+#### Observations and questions by exploring the variation in the amount contributed for different parties:
+
+* There are people who have contributed even $1 
+* Republican Party had got the maximum contributions. 
+* Republican party had also got the highest individual contribution of $7500.
+* Even mean contribution is highest for Republican party
+* Democratic Party coming close second
+* The Republican,Reform Party & Americans Elec which three parties combined of a candidate has the least contribution with 4916.12. It would have been got if we had got the information on how this distribution for that candidate varies for each party.
+* As we thought earlier if Romney was the only candidate from Republican Party he would have got more contributions in terms of money than Obama as Republicans got more amount of contributions than Democrats.
+* Party should have control on fielding the candidates as having too much competitions within the party might affect the chances.
+* Republicans had the highest IQR and Democrats had one of the least.
+
+
+####What are the top 10 contributing cities by amount?
+
+```{r echo=FALSE, fig.width=12, fig.height=8,bivariate_Plots_contribution_by_cities}
+
+by_cities_bivariate <- contributions %>%
+              group_by(contbr_city) %>% 
+              summarise(total = sum(contb_receipt_amt))  %>%
+              arrange(desc(total))
+
+top_cities_bivariate <- head(by_cities_bivariate, 10)
+
+top_cities_bivariate
+
+ggplot(data = top_cities_bivariate, aes(x = contbr_city, y = total,
+                                        fill = contbr_city)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous() +
+  geom_text(aes(y = total, ymax = total, label = total), 
+            position = position_dodge(width = 0.9), vjust = -.5, 
+            color = "black") + 
+  xlab("Cities") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Top 10 cities with most contributions") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+least_cities_bivariate <- tail(by_cities_bivariate, 10)
+
+least_cities_bivariate
+
+ggplot(data = least_cities_bivariate, aes(x = contbr_city, y = total,
+                                          fill = contbr_city)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous() +
+  geom_text(aes(y = total, ymax = total, label = total), 
+            position = position_dodge(width = 0.9), vjust = -.5,
+            color = "black") + 
+  xlab("Cities") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Bottom 10 cities with least contributions") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+#### Observations and questions by exploring the top 10 and bottom 10 contributing cities::
+
+* Madison has made the highest contribution among all the cities which is $1499830.0
+* Milwaukee has the second highest contribution which is $1274665.3
+* DUPONT has made the least contribution of just $14
+* There is a city called Wilwaukee which seems to be wronly mentioned
+* Difference between the contribution of the top two cities and the rest seems to be way too high.
+* It would be interesting to know how these cities have contributed in the last few elections.
+* It would also be interesting to know how these cities contributed for each party.
+* Which city contributed more for which candidate and party?
+* One more thing visible is the cities names is not cleaned as observed during univariate analysis
+
+
+### How does the contribution vary with time?
+
+```{r echo=FALSE, fig.width=12, fig.height=8, bivariate_Plots_contribution_by_date}
+
+ggplot(data = contributions,aes(x = contb_receipt_dt, y = contb_receipt_amt)) +
+  geom_point(color = "blue") +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of Contribution by Date") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+ggplot(data = contributions, aes(x = contb_receipt_dt, y = contb_receipt_amt)) +
+  geom_jitter(alpha = 1/10, color = "blue") +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of Contribution by Date") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4,
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+summary(contributions$contb_receipt_amt)
+
+ggplot(data = contributions, aes(x = contb_receipt_dt, y = contb_receipt_amt)) +
+  geom_jitter(alpha = 1/10, color = "blue") +
+  scale_y_continuous(limit = c(0,4000), breaks = seq(0,4000,250)) +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of the Contribution by Date") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4,
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+table(round(contributions$contb_receipt_amt))
+
+```
+
+
+####Observations by exploring the variation in the amount contributed by time:
+
+* 75% of the contributions are less than $100
+* There are people who have contributed even $1
+* Majority of the contributions are less than 300 dollars
+* 10,15,25,50,100,150,200,250,500,1000,2500 are the most commmonly contributed amounts by individuals.
+* There are 6156 number of contributions of $25
+* There are 11795 number of contributions of $100
+* There are 3519 number of contributions of $10
+* One surprise is there are contributions even after the elections which was held in Nov 2012. These contributions are till Jan 2013 when the President took the oath.
+
+
+#### How much contributions has the female candidate got and how is the distribution by gender?
+
+```{r echo=FALSE, fig.width=8, fig.height=6, bivariate_Plots_distribution_by_gender}
+
+by(contributions$contb_receipt_amt, contributions$gender, sum) / sum(contributions$contb_receipt_amt)
+
+ggplot(data = contributions, aes(x = gender, y = contb_receipt_amt, fill = gender)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(breaks = seq(0,11000000,500000)) +
+  xlab("Gender") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Contributions by Gender") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4,face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold",size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+ggplot(data = subset(contributions,contb_receipt_amt <= 500),
+       aes(x = gender, y = contb_receipt_amt, fill = gender)) + 
+  geom_boxplot() +
+  xlab("Gender") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Contributions by Gender") +
+  theme(axis.text.x = element_text( angle = 50, size = 10, vjust = 0.4, 
+                                    face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+by(contributions$contb_receipt_amt, contributions$gender, summary)
+
+by(contributions$contb_receipt_amt, contributions$gender, sum)
+
+by(contributions$contb_receipt_amt, contributions$gender, IQR)
+
+```
+
+####Observations by exploring the variation in the contribution by gender:
+
+* There is huge difference between the amount contributed to male candidates and female candidate which is not unexpected given the number of candidates and ratio of candidates by gender
+* Male candidates got $10970528 and female candidate got $32365
+* 99.7% of the contributions were for the male candidates and the rest for the only female candidate
+* Maximum individual contribution for a male is $7500 and for a female is $2000
+* Mean contribution for a male is $160.4 and for a female is $166
+* 75% of the individuals contributions made are less than $100 for male and $250 dollars for female. 
+* IQR for female is $200 and for male is $75
+
+
+#### People from which occupation contributed the highest amounts
+
+```{r echo=FALSE, fig.width=14, fig.height=8, bivariate_Plots_distribution_by_top_10_occupation}
+ 
+by_occupation_bivariate <- contributions %>%
+              group_by(contbr_occupation) %>% 
+              summarise(total = sum(contb_receipt_amt))  %>%
+              arrange(desc(total))
+
+top_occupation_bivariate <- head(by_occupation_bivariate, 10)
+
+top_occupation_bivariate
+
+ggplot(data = top_occupation_bivariate, 
+       aes(x = contbr_occupation,y = total, fill = contbr_occupation)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(breaks = seq(0,2621450,500000)) +
+  xlab("Occupations") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution by Top 10 Occupations") +
+  theme(axis.text.x = element_text(size = 5, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+#### Observations from the distribution by occupations
+
+* Retired people contributed $2621425.9 which is more than the rest of the top 10 occupations combined.
+* Two groups in the top 10 have not provided the occupation details out of which one is ranked second and the other ranked sixth.
+* Physicans are third highest contributors.
+* It is surprising to see that homemakers are fourth highest contributors and very close to Physicians.
+* Even with the number of contributions Retired were top and trend continues with the amount contributed as well.
+* More than people in actual jobs it looks like people who are not in job seem to be contributed more to the elections which was the case with number of contributions as well.
+* This is a lesson for the political parties who wants to know which part of the population they should be pleasing more to gain contributions and votes.
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
+
+* Even though Obama from democratic party won the election it was the Republican Party which got more contribution in terms of money.
+* There is huge difference between the money contributed to female candidate and the male candidates. But this is not surpricing given the ratio of the candidates by gender.
+* There is huge spike in the amounts contributed as the election approaches. It is during this period majority of the people decide whom to vote. This should be a lesson for all the contending parties to make sure their campaigns are better during the final few months which is a decider.
+* Highest contribution by cities comes from the capital city and the largest city in the state.
+* Also it is very surprising to see that people who are not in job like Retired and home makers are top contributors. 
+
+### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+
+* Contribution by occupation is very surprising given the highest total contribution coming from the retired as well as home makers and not to forget the people who have not mentioned their occupation.
+
+
+### What was the strongest relationship you found?
+
+Since there is only one numerical variable in the dataset which is the amount contributed, there is no option to check for strong relationship by plotting scatter plot.
+
+But as per our observation through plotting and summaries there are lot of findings as explanied in the above answers.
+
+------
+
+# Multivariate Plots Section
+
+
+#### How does the contribution for the candidates vary by election_tp.
+
+```{r echo=FALSE, fig.width=14, fig.height=8, Multivariate_Plots_by_electiontype}
+
+ggplot(data = contributions, aes(x = cand_lastname, 
+                                 y = contb_receipt_amt, fill = cand_lastname)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~election_tp.)+
+  scale_y_continuous(breaks = seq(0,3500000,500000))+
+  xlab("Candidates") +
+  ylab("Total Contributions in Dollars($)") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"), 
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+
+#### Observations:
+
+* Obama had almost similar amount of contributions during both G2012 and P2012
+* Romney got twice the amount of contributions during G2012 than in P2012 
+* This is very surprising as Romney has more contributions during general elections
+* Even though Obama had more contributions during the primaries he had lost in terms of contribution to Romney in general elections.
+* Also only Obama and Romney had majority of the contributions during G2012 as it they were the only two candidates for G2012.
+
+
+#### Explore how does the contribution for the parties vary by time, candidate and election type
+
+```{r echo=FALSE, fig.width=14, fig.height=8,Multivariate_Plots_parties_and_date}
+
+
+ggplot(data = contributions, aes(x = contb_receipt_dt, y = contb_receipt_amt)) +
+  geom_jitter(alpha = 1/10, color = "blue") +
+  facet_wrap(~party) +
+  scale_y_continuous(limit = c(0,4000), breaks = seq(0,4000,250)) +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of the Contribution by Date and Party") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"), 
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+ggplot(data = contributions, aes(x = contb_receipt_dt, y = contb_receipt_amt)) +
+  geom_jitter(aes(color = cand_firstname)) +
+  facet_wrap(~party) +
+  scale_y_continuous(limit = c(0,4000), breaks = seq(0,4000,250)) +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of the Contribution by Date, Party and Candidate") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4,
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+ggplot(data = contributions, aes(x = contb_receipt_dt, y = contb_receipt_amt)) +
+  geom_jitter(alpha = 1/10, color = "blue") +
+  facet_wrap(election_tp.~party) +
+  scale_y_continuous(limit = c(0,4000), breaks = seq(0,4000,250)) +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of Contribution by Date,Party and Election type") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+ggplot(data = contributions, aes(x = contb_receipt_dt, y = contb_receipt_amt)) +
+  geom_jitter(aes(color = cand_firstname)) +
+  facet_wrap(election_tp.~party) +
+  scale_y_continuous(limit = c(0,4000), breaks = seq(0,4000,250)) +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of Contribution by Date,Candidate,Party and Election type") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"), 
+        plot.title = element_text( size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+```
+
+
+#### Observations after exploring:
+
+* Democratic party has won more number of small contributions which goes to show that they are popular among the common people.
+* Republicans have won more number of large contributions which goes to show they are popular among rich people.
+* Republicans have the contributions distributed among their lot of candidates but as expected all the candidates had withdrawn from the competition except Romney as the General elections approached.
+* Other parties have very less contributions compared to Democratic and Republicans
+* When you explore more by grouping the plot based on party and election type, we get to see that the candidate who had stood from three different parties Republican,The Reform Party and Amercian Elect during the course of the elections did not have any contributions during General Elections 2012
+* Green party had got contributions during the final months leading to the elections but very neglible.
+* It is understandable that other parties got very has the major competition was between the Democratic and Republicans
+
+
+####Exlporing the contribution of the amount by Party, Election type and Top 10 Cities
+
+
+```{r echo=FALSE,  fig.width=14, fig.height=8, Multivariate_Plots_parties_electionstp_and_date}
+
+by_party_city <- contributions %>%
+              group_by(party,contbr_city) %>% 
+              summarise(total = sum(contb_receipt_amt))  %>%
+              filter(contbr_city %in% c("MADISON","MILWAUKEE","MEQUON",
+                                        "BROOKFIELD","HARTLAND","MIDDLETON",
+                                        "GREEN BAY","JANESVILLE","WAUKESHA",
+                                        "RACINE"))
+
+head(by_party_city)
+tail(by_party_city)
+
+ggplot(data = subset(contributions,contbr_city %in% 
+                       c("MADISON","MILWAUKEE","MEQUON","BROOKFIELD",
+                         "HARTLAND","MIDDLETON","GREEN BAY","JANESVILLE",
+                         "WAUKESHA","RACINE")),
+       aes(x=contbr_city,y=contb_receipt_amt)) +
+  geom_bar(stat = "identity", aes(fill = contbr_city))+
+  facet_wrap(~party) + 
+  scale_y_continuous(limit = c(0,1300000), breaks = seq(0,1300000,400000)) +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of the Contribution by Party and top 10 cities") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+ggplot(data=subset(contributions,contbr_city %in% 
+                     c("MADISON","MILWAUKEE","MEQUON","BROOKFIELD","HARTLAND",
+                       "MIDDLETON","GREEN BAY","JANESVILLE","WAUKESHA","RACINE")
+                   & party %in% c("Democratic Party","Republican Party")),
+       aes(x = contbr_city, y = contb_receipt_amt)) +
+  geom_bar(stat = "identity", aes(fill = contbr_city))+
+  facet_wrap(~party) + 
+  scale_y_continuous(limit = c(0,1300000), breaks = seq(0,1300000,400000)) +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of the Contribution by Party and top 10 cities") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4,
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2), 
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+ggplot(data = subset(contributions, contbr_city %in% 
+                       c("MADISON","MILWAUKEE","MEQUON","BROOKFIELD","HARTLAND",
+                         "MIDDLETON","GREEN BAY","JANESVILLE","WAUKESHA",
+                         "RACINE") 
+                     & party %in% c("Democratic Party","Republican Party")),
+       aes(x = contbr_city, y = contb_receipt_amt)) +
+  geom_bar(stat = "identity", aes(fill = contbr_city))+
+  facet_wrap(election_tp.~party) + 
+  scale_y_continuous(limit = c(0,1300000), breaks = seq(0,1300000,400000)) +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of the Contribution by Party, Election type and 
+          Top 10 cities") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4,
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+#### Observation by plotting the distribution by contributed amount by date , party and top 10 cities
+
+* Contribution for parties other than Democratic and Republican is very very less and negligible 
+* Democratic Party has highest contribution from Madison during both P2012 and G2012
+* Republican Party has highest contribution from Milwaukee during both P2012 and G2012
+* Democratic Party had got more contributions from Milwaukee than Republicans
+* Difference between the contribution from Madison and Milwaukee with rest of the top 10 cities is very high
+* Both Democratic and Republicans have got similar amount of contributions from top 10 cities for both general and primary elections.
+* Replublican Party had more contributions from other top 10 cities than Democrats
+
+
+#### Density Plot of contributions by party and elections type
+
+```{r echo=FALSE,fig.width=14, fig.height=6, Multivariate_Plots_density_party_election_amount}
+
+ggplot(data = contributions, aes(contb_receipt_amt)) +
+  geom_density(aes(group = party, colour = party)) +
+  scale_x_continuous(limits = c(0,4000))
+
+ggplot(data = subset(contributions, contb_receipt_amt <= 2500),
+       aes(contb_receipt_amt)) +
+  geom_density(aes(group = party, colour = party, fill = party), alpha=0.3) +
+  scale_x_continuous(limits = c(0,2500)) +
+  facet_wrap(~election_tp.)+
+  xlab("Amount Contributed") +
+  ylab("Density") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+ggplot(data = subset(contributions, contb_receipt_amt <= 2500),
+       aes(contb_receipt_amt)) +
+  geom_density(aes(group = party, colour = party, fill = party), alpha = 0.3) +
+  scale_x_continuous(limits = c(0,2500)) +
+  facet_wrap(~party)+
+  xlab("Amount Contributed") +
+  ylab("Density") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+ggplot(data = subset(contributions, contb_receipt_amt <= 2500), 
+       aes(contb_receipt_amt)) +
+  geom_density(aes(group = party, colour = party, fill = party), alpha = 0.3) +
+  scale_x_continuous(limits = c(0,2500)) +
+  facet_wrap(party~election_tp.)+
+  xlab("Amount Contributed") +
+  ylab("Density") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"), 
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face= "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+```
+
+#### Observations by density plotting amount contributed by party and election type
+
+* Density plot proves again what we had seen in initial analysis where Democratic party had huge number of contributions which are less than $100
+* Republican party had more variability in the individual contributions
+* Not much contributions coming for other parties
+* Republicans had large number of higher contributions
+* Democrats had large number of smaller contributions 
+
+```{r echo=FALSE,fig.width=14, fig.height=6, Multivariate_Plots_date_party_elections}
+
+ggplot(data = contributions, aes(x = contb_receipt_dt)) +
+  geom_histogram(aes(color = party), binwidth = 5) +
+  facet_wrap(~party) +
+  scale_x_date(breaks = "8 month") +
+  xlab("Date") +
+  ylab("Total Number of Contributions") +
+  ggtitle("Variation in Contributions by Date and Party") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2), 
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+ggplot(data = subset(contributions, party %in% 
+                       c("Democratic Party","Republican Party")),
+       aes(x = contb_receipt_dt)) +
+  geom_histogram(aes(color = party), binwidth = 5) +
+  facet_wrap(~party) +
+  scale_x_date(breaks = "5 month") +
+  xlab("Date") +
+  ylab("Total Number of Contributions") +
+  ggtitle("Variation in Contributions by Date and Parties(Republican and Democratic)") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+ggplot(data = subset(contributions, party %in% 
+                       c("Democratic Party","Republican Party")), 
+       aes(x = contb_receipt_dt)) +
+  geom_histogram(aes(color = party), binwidth = 5) +
+  facet_wrap(election_tp.~party) +
+  scale_x_date(breaks = "5 month") +
+  xlab("Date") +
+  ylab("Total Number of Contributions") +
+  ggtitle("Variation in Contributions by Date and Parties(Republican and Democratic)") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+```
+
+#### Observations:
+
+* Democrats had huge number of contributions compared to Republicans
+* There was huge spike in the number of contributions for the Democrats during G2012 compared to P2012
+* Number of contributions for the republicans is not as high as for the democrats but still they had more amount of contributions
+
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
+
+* Contribution for parties other than Democratic and Republican is very very less and neglible. 
+* Democratic Party has highest contribution from Madison. 
+* Republican Party has highest contribution from Milwaukee
+* Republicans had large number of higher contributions
+* Democrats had large number of smaller contributions 
+* Democrats are popular among the poor and middle class.
+* Republicans are popular among the higher and rich class.
+
+
+### Were there any interesting or surprising interactions between features?
+
+* Romney had more contributions during general elections even though Obama won elections.
+* Political parties should also be worried about number of contributions they get along with the amount they get.
+* Going by this number of contributions seem to be having more winner effect than the amount.
+
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE,fig.width=14, fig.height=8, Plot_One}
+
+ggplot(data = subset(contributions, party %in% 
+                       c("Democratic Party","Republican Party")), 
+       aes(x = contb_receipt_dt)) +
+  geom_histogram(aes(color = party), binwidth = 5) +
+  facet_wrap(election_tp.~party) +
+  xlab("Date") +
+  ylab("Total Number of Contributions") +
+  ggtitle("Variation in Contributions by Date for Top two Parties by Election Type") +
+  theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+### Description One
+
+* Democrats had huge number of contributions compared to Republicans
+* There was huge spike in the number of contributions for the Democrats during G2012 compared to P2012
+* Number of contributions for the republicans is not as high as for the democrats but still they had more amount of contributions
+
+
+### Plot Two
+```{r echo=FALSE, fig.width=14, fig.height=8, Plot_Two}
+
+ggplot(contributions, aes(contb_receipt_dt, contb_receipt_amt)) +
+  stat_binhex() + 
+  theme_bw() +
+scale_fill_gradientn(colours = rainbow(3))+
+facet_wrap(~party) +
+xlab("Date") +
+ylab("Contribution of the amount in $") +
+ggtitle("Variation in contribution of amount over Time for each Parties") +
+theme(axis.text.x = element_text(size = 10, vjust = 0.4, face = "bold"),
+      plot.title = element_text(size = 20, face = "bold", vjust = 2),
+      axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+      axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+```
+
+### Description Two
+
+* Democratic party which won the elections looks to be having lesser variation in the contribution compared to the closest rival party which is Republican Party but what seems to have gone in the favour of Democratic party is those large number of small contributions
+
+
+### Plot Three
+```{r echo=FALSE,fig.width=14, fig.height=8, Plot_Three}
+  
+
+ggplot(data = subset(contributions, contbr_city %in% 
+                       c("MADISON","MILWAUKEE","MEQUON","BROOKFIELD",
+                         "HARTLAND","MIDDLETON","GREEN BAY","JANESVILLE",
+                         "WAUKESHA","RACINE") 
+                     & party %in% c("Democratic Party","Republican Party")),
+       aes(x = contbr_city, y = contb_receipt_amt)) +
+  geom_bar(stat = "identity", aes(fill = contbr_city))+
+  facet_wrap(election_tp.~party) + 
+  scale_y_continuous(limit = c(0,1300000), breaks = seq(0,1300000,400000)) +
+  xlab("Date") +
+  ylab("Total Contributions in Dollars($)") +
+  ggtitle("Distribution of Contribution by top 10 cities for Democratic&Republic Parties and election type") +
+  theme(axis.text.x = element_text(angle = 50, size = 10, vjust = 0.4, 
+                                   face = "bold"),
+        plot.title = element_text(size = 20, face = "bold", vjust = 2),
+        axis.title.x = element_text(face = "bold", size = 15, vjust = -0.35),
+        axis.title.y = element_text(face = "bold", vjust = 0.35, size = 15))
+
+
+```
+
+### Description Three
+
+* Democratic Party has highest contribution from Madison
+* Republican Party has highest contribution from Milwaukee
+* Democratic Party had got more contributions from Milwaukee than Republicans
+* Difference between the contribution from Madison and Milwaukee with rest of the top 10 cities is very high
+* Both Democratic and Republicans have got similar amount of contributions from top 10 cities for both general and primary elections.
+* Replublican Party had more contributions from other top 10 cities than Democrats
+
+------
+
+# Reflection
+
+The dataset contains information about the contributions made by the people to the political parties during 2012 US Presidential Elections. I started exploring the dataset initially to get the idea about the variables and the observations. 
+
+Based on the initial look into the dataset I found that there was no information on the party to which the candidate belonged to and also the gender of the candidate. I collected the information on the party of the candidate and gender by googling and looking into some website. 
+
+Once I collected the information I updated the dataset to include two more additional variables which gives the information on the candidate gender and the party to which the candidate belongs to. I also made some modifications like cleaned the zip code variable of the contributor to five digit and also changed the type of the date field from factor to Date
+
+Along with that I also observed that all contributions were in negative amount with election type being 2008 and also some contributions being negative for the 2012 election type. These were the refunds by the parties and candidates for the contributions made during the 2008 elections. Also the ones in negative with election type G2012/P2012 were for reattribution/redesignation in 2012. Removed the observations with negative amounts. This was a bit challenging to understand, as there is no clear understanding how these negative value observations relate to other contributions in the dataset.
+
+Once the dataset was cleaned and ready to explore, I started plotting and checking the summaries based on the variables of interest. Along the way found how the number of contributions vary with candidates, political parties, contributors occupations,contributors cities and time.
+
+Most interesting part was how the two important candidates and political parties faired against each other in terms of number of contributions and total amount contributed. It was very surprising to know how the winner had very less  difference with  the closest rival in the amount contributed. Also it was interesting to know how different cities varied their contribution based on the parties and candidates.
+
+One more very interesting observation was even though the winner Obama had huge difference or variation in the number of contributions compared to Romney, the difference in the total amount was very small. When looked in deeper how this could happen I found that Obama had huge number of small contributions compared to Romney or Republicans who had large share of big contributions. This gives us some insight into the kind of people backing these two political parties. Democrats look to be more popular among the poor and middle class section whereas Republicans have backing of the well to do people.
+
+Also based on the top 10 cities contributions it was very interesting to know how the people from different cities support and contribute the political parties. 
+
+I feel this kind of dataset gives the political parties huge advantage to:: 
+
+* Understand their voter base and also the people who dont vote them or support them. 
+* Plan their political campaigns.
+* Plan their government spendings
+* Learn from their mistakes
+* And lot more.
+
+
+
+------
+
+It would be more interesting to add more details about the contributors like :
+
+* Giving them a unique identity or using SSN for tracking the contributions.
+* Making it mandatory to share the complete details about themselves when they make the contributions.
+* Their financial background and the source of money contributed
+* Educational background of the people.
+* Party to which they had contributed in the previous elections
+* Reason for contributing. Is it party or candidate or anything else?
+
+These details should give us more insight into the inner thoughts of the people who contribute to the elections for the parties and candidates. Also it is important for the government authorities to make sure the source of the money used in the elections is not illegal.
+
+Overall the dataset was very interesting to get insight into the contributions made by the people of Wisconsin for the 2012 US Presidential Elections. Analyzing such dataset for entire country would be even very interesting.
